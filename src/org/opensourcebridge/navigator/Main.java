@@ -2,12 +2,12 @@ package org.opensourcebridge.navigator;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.widget.TextView;
 
 public class Main extends Activity {
-    public final boolean hasBle = testBle();
+    public static boolean hasBle;
 
         private final int SPLASH_DISPLAY_LENGTH = 1000;
         /** Called when the activity is first created. */
@@ -15,6 +15,11 @@ public class Main extends Activity {
         public void onCreate(Bundle bundle) {
                 super.onCreate(bundle);
                 setContentView(R.layout.loading);
+
+                hasBle = testBle();
+                TextView versionText = (TextView)findViewById(R.id.version_text);
+                versionText.setText(versionText.getText()+ (hasBle ? "BLE" : ""));
+
                 /* New Handler to start the Menu-Activity
                  * and close this Splash-Screen after some seconds.*/
                 new Handler().postDelayed(new Runnable(){
@@ -30,6 +35,7 @@ public class Main extends Activity {
         }
 
         private boolean testBle() {
-            return getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+             getPackageManager(); //.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+             return true;
         }
 }
