@@ -324,6 +324,18 @@ public class Schedule extends Activity implements LeScanCallback {
         });
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        scanLeDevice(true);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        scanLeDevice(false);
+    }
+
     private void setupBluetooth() {
         final BluetoothManager bluetoothManager =
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -342,15 +354,16 @@ public class Schedule extends Activity implements LeScanCallback {
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    mScanning = false;
-                    mBluetoothAdapter.stopLeScan(Schedule.this);
+                    scanLeDevice(false);
                 }
             }, SCAN_PERIOD);
 
             mScanning = true;
+            Log.d(Constants.APP_TAG, "BLE scanning");
             mBluetoothAdapter.startLeScan(this);
         } else {
             mScanning = false;
+            Log.d(Constants.APP_TAG, "BLE stopping");
             mBluetoothAdapter.stopLeScan(this);
         }
     }
