@@ -1,15 +1,6 @@
 package org.opensourcebridge.navigator;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.URL;
-import java.net.URLConnection;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -17,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.concurrent.ExecutionException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -48,6 +40,10 @@ import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
+
+import com.koushikdutta.async.future.Future;
+import com.koushikdutta.async.http.AsyncHttpClient;
+import com.koushikdutta.async.http.ResponseCacheMiddleware;
 
 public class Schedule extends Activity {
 
@@ -108,6 +104,8 @@ public class Schedule extends Activity {
     Button mShowDescription;
     Button mShowBio;
 
+    final AsyncHttpClient http = AsyncHttpClient.getDefaultInstance();
+
     private static final String SCHEDULE_URI = "http://opensourcebridge.org/events/2014/schedule.json";
     private static final String SPEAKER_URI_BASE = "http://opensourcebridge.org/users/";
 
@@ -117,6 +115,13 @@ public class Schedule extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         mHandler = new Handler();
+        try {
+            ResponseCacheMiddleware.addCache(http,
+                    getFileStreamPath("webcache"),
+                    1024 * 1024 * 10);
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
 
         mSpeakers = new HashMap<Integer, Speaker>();
 
@@ -223,14 +228,15 @@ public class Schedule extends Activity {
                     speaker = mSpeakers.get(id);
                 } else {
                     try {
-                        String raw = getURL(SPEAKER_URI_BASE + id + ".json", false);
-                        JSONObject json = new JSONObject(raw);
-                        speaker = new Speaker(json.getJSONObject("user"));
+                        Future<JSONObject> json = http.getJSONObject(SPEAKER_URI_BASE + id + ".json");
+                        speaker = new Speaker(json.get().getJSONObject("user"));
                         mSpeakers.put(id, speaker);
                     } catch (JSONException e) {
                         e.printStackTrace();
-                    } catch (IOException e) {
-                        // file couldn't be loaded
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
                     }
                 }
 
@@ -482,86 +488,6 @@ public class Schedule extends Activity {
         mEvents.setAdapter(mAdapter);
     }
 
-    /**
-     * fetches a url and returns it as a string.  This method will cache the
-     * result locally and use the cache on repeat loads
-     * @param uri - a uri beginning with http://
-     * @param force - force refresh of data
-     * @return
-     */
-    private String getURL(String uri, boolean force) throws IOException{
-        InputStream is = null;
-        OutputStream os = null;
-        Context context = getApplicationContext();
-
-        // get file path for cached file
-        String dir = context.getFilesDir().getAbsolutePath();
-        String path = uri.substring(uri.lastIndexOf("/")+1);
-        File file = new File(dir+"/"+path);
-        String line;
-        StringBuilder sb = new StringBuilder();
-        try {
-            // determine whether to open local file or remote file
-            if (file.exists() && file.lastModified()+CACHE_TIMEOUT > System.currentTimeMillis() && !force){
-                is = new FileInputStream(file);
-            } else {
-                URL url = new URL(uri);
-                URLConnection conn = null;
-                try {
-                    conn = url.openConnection();
-                    conn.setDoInput(true);
-                    conn.setUseCaches(false);
-                    is = conn.getInputStream();
-                    os = context.openFileOutput(path, Context.MODE_PRIVATE);
-                } catch (IOException e) {
-                    // fall back to local file if exists, regardless of age
-                    if (file.exists()) {
-                        is = new FileInputStream(file);
-                    } else {
-                        throw e;
-                    }
-                }
-            }
-
-            // read entire file, write cache at same time if we are fetching from the remote uri
-            BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"), 8192);
-            OutputStreamWriter bw = null;
-            if (os != null) {
-                bw = new OutputStreamWriter(os);
-            }
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
-                if (bw != null) {
-                    bw.append(line);
-                }
-            }
-            if (bw != null) {
-                bw.flush();
-            }
-
-        } catch (IOException e) {
-            // failure to get file, throw this higher
-            throw e;
-
-        } finally {
-            if (is!=null) {
-                try {
-                    is.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (os!=null) {
-                try {
-                    os.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return sb.toString();
-    }
 
     /**
      * parse events from json file and update the given calendar
@@ -571,10 +497,9 @@ public class Schedule extends Activity {
     private void parseProposals(ICal calendar, boolean force){
         ArrayList<Event> events = new ArrayList<Event>();
         try{
-            String raw_json = getURL(SCHEDULE_URI, force);
             DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss-'07:00'");
-            JSONObject schedule = new JSONObject(raw_json);
-            JSONArray json_events = schedule.getJSONArray("items");
+            Future<JSONObject> schedule = http.getJSONObject(SCHEDULE_URI);
+            JSONArray json_events = schedule.get().getJSONArray("items");
             int size = json_events.length();
             for(int i=0; i<size; i++){
                 JSONObject json = json_events.getJSONObject(i);
@@ -591,9 +516,10 @@ public class Schedule extends Activity {
             e.printStackTrace();
         } catch (ParseException e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            // unable to get file, show error to user
-            // TODO
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         }
         calendar.setEvents(events);
     }
