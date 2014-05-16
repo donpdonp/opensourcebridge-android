@@ -2,10 +2,13 @@ package org.opensourcebridge.navigator;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 
 public class Main extends Activity {
+    public final boolean hasBle = testBle();
+
         private final int SPLASH_DISPLAY_LENGTH = 1000;
         /** Called when the activity is first created. */
         @Override
@@ -24,5 +27,9 @@ public class Main extends Activity {
                                 Main.this.finish();
                         }
                 }, SPLASH_DISPLAY_LENGTH);
+        }
+
+        private boolean testBle() {
+            return getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
         }
 }
