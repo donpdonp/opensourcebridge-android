@@ -17,6 +17,8 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -106,6 +108,8 @@ public class Schedule extends Activity {
 
     final AsyncHttpClient http = AsyncHttpClient.getDefaultInstance();
 
+    private BluetoothAdapter mBluetoothAdapter;
+
     private static final String SCHEDULE_URI = "http://opensourcebridge.org/events/2014/schedule.json";
     private static final String SPEAKER_URI_BASE = "http://opensourcebridge.org/users/";
 
@@ -121,6 +125,10 @@ public class Schedule extends Activity {
                     1024 * 1024 * 10);
         } catch (IOException e1) {
             e1.printStackTrace();
+        }
+
+        if(Main.hasBle) {
+            setupBluetooth();
         }
 
         mSpeakers = new HashMap<Integer, Speaker>();
@@ -311,6 +319,16 @@ public class Schedule extends Activity {
                 now();
                 }
         });
+    }
+
+    private void setupBluetooth() {
+        final BluetoothManager bluetoothManager =
+                (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = bluetoothManager.getAdapter();
+        if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, 0);
+        }
     }
 
     /**
