@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Open Source Bridge - Schedule</string>
+    <string name="app_name">OSB Navigator</string>
     <string name="version">Android app version 2014.0</string>
 
     <string name="about">Open Source Bridge is a new conference for developers working with open source technologies and for people interested in learning the open source way.  This app ensures you always have the conference schedule right in your pocket.</string>
