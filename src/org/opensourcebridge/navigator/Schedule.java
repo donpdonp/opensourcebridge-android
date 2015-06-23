@@ -108,7 +108,7 @@ public class Schedule extends Activity {
     Button mShowDescription;
     Button mShowBio;
 
-    private static final String SCHEDULE_URI = "http://opensourcebridge.org/events/2014/schedule.json";
+    private static final String SCHEDULE_URI = "http://opensourcebridge.org/events/2015/schedule.json";
     private static final String SPEAKER_URI_BASE = "http://opensourcebridge.org/users/";
 
     /** Called when the activity is first created. */
