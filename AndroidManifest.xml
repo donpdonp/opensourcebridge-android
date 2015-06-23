@@ -4,6 +4,10 @@
     android:versionCode="17"
     android:versionName="2015.0" >
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-sdk android:minSdkVersion="8" />
+    
     <application
         android:description="@string/app_description"
         android:icon="@drawable/ic_launcher"
@@ -25,8 +29,5 @@
         </activity>
     </application>
 
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <uses-sdk android:minSdkVersion="3" />
 
 </manifest>
